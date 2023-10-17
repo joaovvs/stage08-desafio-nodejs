@@ -60,8 +60,6 @@ class UsersController{
        
         const [userWithUpdatedEmail] = await knex("users").where({email});
 
-        console.log(userWithUpdatedEmail.id);
-
         /*check if email is used to another user*/
         if(userWithUpdatedEmail && userWithUpdatedEmail.id !=id){
             throw new AppError("Este e-mail já está em uso por outro usuário");
@@ -79,9 +77,6 @@ class UsersController{
         /* check if old+passwords match with password*/
         if(password && old_password){
             const checkOldPassword = await compare(old_password, user.password);
-            console.log(checkOldPassword);
-            console.log("senha informada:"+password);
-            console.log("senha na base"+user.password);
             if(!checkOldPassword){
                 throw new AppError("A senha antiga não confere!");
             }
