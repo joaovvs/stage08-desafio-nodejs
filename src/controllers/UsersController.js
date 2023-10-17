@@ -16,14 +16,17 @@ class UsersController{
         const checkPassword = user.password;
         console.log(`user name: ${checkUserName}`);
 
+        /* if request don't have username*/
         if(!checkUserName){
             throw new AppError("O nome do usuário é obrigatório");
         }
 
+        /* if request don't have e-mail*/
         if(!checkEmail){
             throw new AppError("O e-mail é obrigatório");
         }
 
+        /* if request don't have password*/
         if(!checkPassword){
             throw new AppError("A senha é obrigatória");
         }
