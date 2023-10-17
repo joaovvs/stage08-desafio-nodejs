@@ -11,6 +11,10 @@ class UsersController{
         const {name, email, password, avatar} = request.body;
 
         const user ={name, email, password, avatar};
+        
+        /* generate hash for pasword*/
+        user.password = await hash(user.password, 8);
+        
 
         await knex("users").insert(user);
         
