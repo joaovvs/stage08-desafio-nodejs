@@ -2,6 +2,7 @@ const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 
 class MovieNotesController{
+
     async create(request,response){
         const { title, description, rating, tags } = request.body
         const {user_id} = request.params;
@@ -110,6 +111,15 @@ class MovieNotesController{
         return response.json(movieNotesWithTags);
     }
     
+    async delete(request,response){
+       const { id } = request.params;
+
+       const movieNote = await knex("movie_notes")
+       .where({id})
+       .delete();
+
+       return response.json();
+    }
 }
 
 module.exports = MovieNotesController;
