@@ -30,6 +30,18 @@ class MovieNotesController{
         await knex("movie_tags").insert(tagsInsert);
 
     }
+
+    async show(request,response){
+        console.log("entrou aqui");
+        const { id } = request.params;  
+        
+        const movie_note = await knex("movie_notes").where({id}).first();
+        const movie_tag = await knex("movie_tags").where({note_id: id}).orderBy("name");
+        console.log({...movie_note,movie_tag});
+
+        return response.json({...movie_note,movie_tag});
+    }
+    
 }
 
 module.exports = MovieNotesController;
