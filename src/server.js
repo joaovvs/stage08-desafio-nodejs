@@ -2,7 +2,7 @@ require("express-async-errors");
 const express = require('express');
 const AppError = require("./utils/AppError");
 const routes = require('./routes');
-const database = require('./database/sqlite');
+const connection = require("./database/knex");
 
 
 const app = express();
@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(routes);
 
 /*create database*/
-database();
+connection.queryBuilder();
 
 
 
