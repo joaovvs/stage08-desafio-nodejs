@@ -5,7 +5,7 @@ class MovieNotesController{
 
     async create(request,response){
         const { title, description, rating, tags } = request.body
-        const {user_id} = request.params;
+        const user_id = request.user.id;
 
         const [userIdExists] = await knex("users").where({id: user_id});
         /* check if user exists before create a new movie_note*/
@@ -54,18 +54,15 @@ class MovieNotesController{
         const movie_note = await knex("movie_notes").where({id}).first();
         const movie_tag = await knex("movie_tags").where({note_id: id}).orderBy("name");
 
-        const movieNotesWithTags={...movie_note,movie_tag};
-        return response.json(movieNotesWithTags);
+
+        return response.json({...movie_note,movie_tag});
     }
 
     async index(request,response){
-        const { user_id, title,tags} = request.query;
+        const { title, tags} = request.query;
+        const user_id = request.user.id;
 
         let notes;
-
-        if(!user_id){
-            throw new AppError("Nâo foi informado um id de usuário válido");
-        }
 
         if(tags){
             const filterTags = tags.split(",").map(tag => tag.trim());
