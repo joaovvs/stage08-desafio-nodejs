@@ -5,8 +5,9 @@ const routes = require('./routes');
 const connection = require("./database/knex");
 const uploadConfig = require("./configs/upload");
 
-
+const cors = require("cors");
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER));
