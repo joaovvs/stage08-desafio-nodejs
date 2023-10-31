@@ -43,8 +43,84 @@ class MovieNotesController{
             }
         });
 
+
         return response.json(movieNotesWithTags);
 
+
+    }
+
+    async update(request, response){
+        const { id: note_id, title, description, rating, tags } = request.body
+        const user_id = request.user.id;
+        console.log(user_id);
+        const [movieNote] = await knex("movie_notes").where({id: note_id, user_id});
+
+        const [userIdExists] = await knex("users").where({id: user_id});
+        if(!userIdExists){
+            throw new AppError("Usuário não cadastrado"); 
+        }
+
+        if(!movieNote){
+            throw new AppError("Filme não encontrado!");
+        }
+
+        if(rating<1 || rating>5){
+            throw new AppError("Informe uma nota entre 1 e 5");
+        }
+        movieNote.title= title ?? movieNote.title;
+        movieNote.description= description ?? movieNote.description;
+        movieNote.rating = rating ?? movieNote.rating;
+
+        let movieTags = await knex("movie_tags").where({note_id, "user_id": user_id});
+
+        const newTags = [];
+        const removedTags = [];
+        
+
+         
+        if(tags.length>0){
+
+            /*valid if not exists received tag includes on newTags array*/
+            tags.forEach(tagReceived => {
+                if(movieTags.some(tag => tag.name === tagReceived.name)){
+                    console.log(`Existe a tag ${tagReceived.name}`)
+                } else {
+                    newTags.push({name: tagReceived.name, user_id, note_id });
+                    console.log(`Não existe a tag ${tagReceived.name}`);
+                }
+            })
+            /*inserts newTags*/
+            if(newTags.length>0){
+                await knex("movie_tags").insert(newTags);
+            }
+
+            movieTags.forEach(movieTag => 
+                {
+                    /*valid if tag received not exits*/
+                    if(!tags.some(tag => tag.name === movieTag.name)){  
+                        console.log(`A tag ${movieTag.id},${movieTag.name} foi removida`);
+                        removedTags.push(movieTag);
+                    }
+                });
+            console.log(removedTags);
+            /*delete removedTags*/
+            if(removedTags.length>0){
+                
+                await knex("movie_tags")
+                .whereIn(["id", "user_id", "note_id"],removedTags.map(removed=> [removed.id, removed.user_id, removed.note_id]))
+                .delete();
+                console.log(removedTags);
+            }
+
+            movieTags=await knex("movie_tags").where({note_id, "user_id": user_id});
+        }
+       
+
+        
+
+        return response.status(201).json({movieNote,"tags":movieTags});
+        /*await knex("movie_notes").update({ title, description, rating}).where({id});*/    
+        
 
     }
 

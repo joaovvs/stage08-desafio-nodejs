@@ -8,13 +8,12 @@ class UsersController{
 
 
     async create(request,response){
-        const {name, email, password, avatar} = request.body;
+        const {name, email, password} = request.body;
 
-        const user ={name, email, password, avatar};
+        const user ={name, email, password};
         const checkUserName = user.name;
         const checkEmail = user.email;
         const checkPassword = user.password;
-        console.log(`user name: ${checkUserName}`);
 
         /* if request don't have username*/
         if(!checkUserName){
@@ -38,8 +37,8 @@ class UsersController{
         }
 
         /* generate hash for password*/
-        user.password = await hash(user.password, 8);
-        
+        const hashedPassword = await hash(user.password, 8);
+        user.password=hashedPassword;
 
         await knex("users").insert(user);
         
@@ -57,7 +56,7 @@ class UsersController{
             throw new AppError("Usuário não encontrado!");
         }
 
-       
+        console.log({email});
         const [userWithUpdatedEmail] = await knex("users").where({email});
 
         /*check if email is used to another user*/
@@ -86,14 +85,14 @@ class UsersController{
         }
 
         await knex("users").update({
-                    name:user.name,
-                    email:user.email,
+                    name: user.name,
+                    email: user.email,
                     password: user.password, 
                     avatar: user.avatar,
                     updated_at: knex.fn.now() 
                     }).where({id: user_id});
 
-        response.json(await knex("users").where({id: user_id}));
+        response.json(user);
 
     }
 }
