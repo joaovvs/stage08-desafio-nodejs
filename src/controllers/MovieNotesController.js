@@ -20,21 +20,26 @@ class MovieNotesController{
         let [note_id] = await knex("movie_notes").insert({ title, description, rating, user_id});
 
         /*return tags */
-        const tagsInsert = tags.map(name =>{
+        console.log(tags);
+        const tagsInsert = tags.map(tag =>{
             return{
                 note_id,
-                name,
+                name: tag,
                 user_id
             }
         });
         /*insert tags at movie_tags table*/
-        await knex("movie_tags").insert(tagsInsert);
+        if(tagsInsert.length>0){
+            await knex("movie_tags").insert(tagsInsert);
+        }
 
         const movieTags = await knex("movie_tags").where({note_id});
 
         const note = await knex("movie_notes").where({id: note_id});
 
-        const movieNotesWithTags = note.map(note =>{
+
+        const movieNotesWithTags = note.map(note =>
+            {
             const noteTags = movieTags.filter( tag => tag.note_id === note_id);
 
             return {
@@ -44,7 +49,7 @@ class MovieNotesController{
         });
 
 
-        return response.json(movieNotesWithTags);
+        return response.json(...movieNotesWithTags);
 
 
     }
@@ -82,11 +87,11 @@ class MovieNotesController{
 
             /*valid if not exists received tag includes on newTags array*/
             tags.forEach(tagReceived => {
-                if(movieTags.some(tag => tag.name === tagReceived.name)){
+                if(movieTags.some(tag => tag.name === tagReceived)){
                     console.log(`Existe a tag ${tagReceived.name}`)
                 } else {
-                    newTags.push({name: tagReceived.name, user_id, note_id });
-                    console.log(`Não existe a tag ${tagReceived.name}`);
+                    newTags.push({name: tagReceived, user_id, note_id });
+                    console.log(`Não existe a tag ${tagReceived}`);
                 }
             })
             /*inserts newTags*/
@@ -97,7 +102,7 @@ class MovieNotesController{
             movieTags.forEach(movieTag => 
                 {
                     /*valid if tag received not exits*/
-                    if(!tags.some(tag => tag.name === movieTag.name)){  
+                    if(!tags.some(tag => tag === movieTag.name)){  
                         console.log(`A tag ${movieTag.id},${movieTag.name} foi removida`);
                         removedTags.push(movieTag);
                     }
@@ -118,8 +123,9 @@ class MovieNotesController{
 
         
 
-        return response.status(201).json({movieNote,"tags":movieTags});
-        /*await knex("movie_notes").update({ title, description, rating}).where({id});*/    
+        
+        await knex("movie_notes").update({ title, description, rating}).where({id: note_id});  
+        return response.status(201).json({movieNote,"tags":movieTags});  
         
 
     }
@@ -130,8 +136,11 @@ class MovieNotesController{
         const movie_note = await knex("movie_notes").where({id}).first();
         const movie_tag = await knex("movie_tags").where({note_id: id}).orderBy("name");
 
-
-        return response.json({...movie_note,movie_tag});
+        if (movie_note){
+            return response.json({...movie_note,tags: movie_tag.map(tag => tag.name) });
+        } else {
+            throw new AppError("Nota não encontrada!",404);
+        }
     }
 
     async index(request,response){
