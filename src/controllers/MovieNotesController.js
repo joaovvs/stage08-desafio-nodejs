@@ -85,7 +85,9 @@ class MovieNotesController{
 
             /*valid if not exists received tag includes on newTags array*/
             tags.forEach(tagReceived => {
-                if(movieTags.some(tag => tag.name !== tagReceived)){
+                if(movieTags.some(tag => tag.name === tagReceived)){
+                    console.log("tag já existe");
+                }else {
                     newTags.push({name: tagReceived, user_id, note_id });
                 }
             })
