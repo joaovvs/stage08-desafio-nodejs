@@ -13,7 +13,7 @@ class MovieNotesController{
             throw new AppError("Usuário não cadastrado"); 
         }
 
-        if(rating<1 || rating>5){
+        if(rating<0 || rating>5){
             throw new AppError("Informe uma nota entre 1 e 5");
         }
         
@@ -81,8 +81,6 @@ class MovieNotesController{
         
 
          
-        if(tags.length>0){
-
             /*valid if not exists received tag includes on newTags array*/
             tags.forEach(tagReceived => {
                 if(movieTags.some(tag => tag.name === tagReceived)){
@@ -112,7 +110,7 @@ class MovieNotesController{
             }
 
             movieTags=await knex("movie_tags").where({note_id, "user_id": user_id});
-        }      
+     
         
         await knex("movie_notes").update({ title, description, rating , "updated_at" : knex.fn.now() }).where({id: note_id});  
         return response.status(201).json({movieNote,"tags":movieTags});  
@@ -122,12 +120,14 @@ class MovieNotesController{
 
     async show(request,response){
         const { id } = request.params;  
+        const user_id = request.user.id;
         
-        const movie_note = await knex("movie_notes").where({id}).first();
+        const movie_note = await knex("movie_notes").where({id, user_id}).first();
         const movie_tag = await knex("movie_tags").where({note_id: id}).orderBy("name");
+        const [user] = await knex("users").where({id: user_id});
 
         if (movie_note){
-            return response.json({...movie_note,tags: movie_tag.map(tag => tag.name) });
+            return response.json({...movie_note,tags: movie_tag.map(tag => tag.name),author: {"name": user.name,"avatar": user.avatar} });
         } else {
             throw new AppError("Nota não encontrada!",404);
         }
