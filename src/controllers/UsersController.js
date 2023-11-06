@@ -1,6 +1,6 @@
 const { hash, compare } = require("bcryptjs");
-const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
+const UserRepository = require("../repositories/UserRepository");
 
 
 
@@ -9,6 +9,8 @@ class UsersController{
 
     async create(request,response){
         const {name, email, password} = request.body;
+
+        const userRepository = new UserRepository();
 
         const user ={name, email, password};
         const checkUserName = user.name;
@@ -30,7 +32,7 @@ class UsersController{
             throw new AppError("A senha é obrigatória");
         }
         
-        const [checkUserExist] = await knex("users").where({email});
+        const checkUserExist= await userRepository.findByEmail(email);
 
         if(checkUserExist){
             throw new AppError("E-mail de usuário já está cadastrado!");
@@ -40,7 +42,7 @@ class UsersController{
         const hashedPassword = await hash(user.password, 8);
         user.password=hashedPassword;
 
-        await knex("users").insert(user);
+        await userRepository.create(user);
         
         return response.status(201).json(user);
     }
@@ -48,16 +50,15 @@ class UsersController{
     async update(request, response) {
         const { name, email, password, old_password, avatar} = request.body;
         const user_id = request.user.id;
-        
-        const [user] = await knex("users").where({id: user_id});
+        const userRepository = new UserRepository();
+        const user = await userRepository.findById(user_id);
 
         /*check with user exists*/
         if(!user){
             throw new AppError("Usuário não encontrado!");
         }
 
-        console.log({email});
-        const [userWithUpdatedEmail] = await knex("users").where({email});
+        const userWithUpdatedEmail = await userRepository.findByEmail(email);
 
         /*check if email is used to another user*/
         if(userWithUpdatedEmail && userWithUpdatedEmail.id !=user_id){
@@ -66,7 +67,6 @@ class UsersController{
 
         user.name = name ?? user.name;
         user.email = email ?? user.email;
-        user.avatar = avatar ?? user.avatar;
 
         /* check if exists a old_password on request*/
         if(password && !old_password){
@@ -83,14 +83,8 @@ class UsersController{
             user.password = await hash(password,8);
             
         }
-
-        await knex("users").update({
-                    name: user.name,
-                    email: user.email,
-                    password: user.password, 
-                    avatar: user.avatar,
-                    updated_at: knex.fn.now() 
-                    }).where({id: user_id});
+        
+        await userRepository.update(user, user_id);
 
         response.json(user);
 
