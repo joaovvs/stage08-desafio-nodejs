@@ -1,6 +1,8 @@
 const { hash, compare } = require("bcryptjs");
 const AppError = require("../utils/AppError");
 const UserRepository = require("../repositories/UserRepository");
+const UserCreateService = require("../services/UserCreateService");
+const UserUpdateService = require("../services/UserUpdateService");
 
 
 
@@ -9,82 +11,41 @@ class UsersController{
 
     async create(request,response){
         const {name, email, password} = request.body;
+        const user ={name, email, password};
 
         const userRepository = new UserRepository();
-
-        const user ={name, email, password};
-        const checkUserName = user.name;
-        const checkEmail = user.email;
-        const checkPassword = user.password;
+        const userCreateService= new UserCreateService(userRepository);
 
         /* if request don't have username*/
-        if(!checkUserName){
+        if(!user.name){
             throw new AppError("O nome do usuário é obrigatório");
         }
 
         /* if request don't have e-mail*/
-        if(!checkEmail){
+        if(!user.email){
             throw new AppError("O e-mail é obrigatório");
         }
 
         /* if request don't have password*/
-        if(!checkPassword){
+        if(!user.password){
             throw new AppError("A senha é obrigatória");
         }
-        
-        const checkUserExist= await userRepository.findByEmail(email);
+       
+        await userCreateService.execute(user);
 
-        if(checkUserExist){
-            throw new AppError("E-mail de usuário já está cadastrado!");
-        }
-
-        /* generate hash for password*/
-        const hashedPassword = await hash(user.password, 8);
-        user.password=hashedPassword;
-
-        await userRepository.create(user);
-        
         return response.status(201).json(user);
     }
 
     async update(request, response) {
-        const { name, email, password, old_password, avatar} = request.body;
+        const { name, email, password, old_password} = request.body;
+        const user={name, email, password, old_password};
         const user_id = request.user.id;
+
         const userRepository = new UserRepository();
-        const user = await userRepository.findById(user_id);
-
-        /*check with user exists*/
-        if(!user){
-            throw new AppError("Usuário não encontrado!");
-        }
-
-        const userWithUpdatedEmail = await userRepository.findByEmail(email);
-
-        /*check if email is used to another user*/
-        if(userWithUpdatedEmail && userWithUpdatedEmail.id !=user_id){
-            throw new AppError("Este e-mail já está em uso por outro usuário");
-        }
-
-        user.name = name ?? user.name;
-        user.email = email ?? user.email;
-
-        /* check if exists a old_password on request*/
-        if(password && !old_password){
-            throw new AppError("É necessário informar a senha antiga para alterar a senha!");
-        }
-
-        /* check if old+passwords match with password*/
-        if(password && old_password){
-            const checkOldPassword = await compare(old_password, user.password);
-            if(!checkOldPassword){
-                throw new AppError("A senha antiga não confere!");
-            }
-
-            user.password = await hash(password,8);
-            
-        }
+        const userUpdateService= new UserUpdateService(userRepository);
         
-        await userRepository.update(user, user_id);
+       
+        await userUpdateService.execute(user,user_id);
 
         response.json(user);
 

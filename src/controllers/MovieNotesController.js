@@ -1,54 +1,20 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 
+const MovieNoteRepository = require("../repositories/MovieNoteRepository");
+const MovieNoteCreateService = require("../services/MovieNoteCreateService");
+
 class MovieNotesController{
 
     async create(request,response){
         const { title, description, rating, tags } = request.body
         const user_id = request.user.id;
 
-        const [userIdExists] = await knex("users").where({id: user_id});
-        /* check if user exists before create a new movie_note*/
-        if(!userIdExists){
-            throw new AppError("Usuário não cadastrado"); 
-        }
-
-        if(rating<0 || rating>5){
-            throw new AppError("Informe uma nota entre 1 e 5");
-        }
-        
-        let [note_id] = await knex("movie_notes").insert({ title, description, rating, user_id});
-
-        /*return tags */
-        const tagsInsert = tags.map(tag =>{
-            return{
-                note_id,
-                name: tag,
-                user_id
-            }
-        });
-        /*insert tags at movie_tags table*/
-        if(tagsInsert.length>0){
-            await knex("movie_tags").insert(tagsInsert);
-        }
-
-        const movieTags = await knex("movie_tags").where({note_id});
-
-        const note = await knex("movie_notes").where({id: note_id});
+        const movieNoteRepository = new MovieNoteRepository();
+        const movieNoteCreateService= new MovieNoteCreateService(movieNoteRepository);
 
 
-        const movieNotesWithTags = note.map(note =>
-            {
-            const noteTags = movieTags.filter( tag => tag.note_id === note_id);
-
-            return {
-                ...note,
-                tags: noteTags
-            }
-        });
-
-
-        return response.json(...movieNotesWithTags);
+        return response.json({...await movieNoteCreateService.execute({ title, description, rating, tags, user_id })});
 
 
     }

@@ -1,4 +1,5 @@
 const knex = require("../database/knex");
+
 class UserRepository{
 
 
@@ -20,11 +21,11 @@ class UserRepository{
        return { id: userId};
     }
 
-    async update(user, user_id){
+    async update(user_data, user_id){
         const result = await knex("users").update({
-            name: user.name,
-            email: user.email,
-            password: user.password, 
+            name: user_data.name,
+            email: user_data.email,
+            password: user_data.password, 
             updated_at: knex.fn.now() 
             }).where({id: user_id});
 
